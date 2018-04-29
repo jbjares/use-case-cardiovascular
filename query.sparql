@@ -1,0 +1,16 @@
+PREFIX pht: <http://datalab.rwth-aachen.de/vocab/pht/>
+ prefix xsd: <http://www.w3.org/2001/XMLSchema#> 
+ prefix sct: <http://purl.bioontology.org/ontology/SNOMEDCT/> 
+ prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> 
+ PREFIX rcd: <http://purl.bioontology.org/ontology/RCD/>	
+
+ SELECT ?sexS, ?ageD, ?numD WHERE {  ?URI a sct:125676002;
+ 											 sct:429019009 ?sexS ;
+ 											 rcd:X7686 ?ageD ;
+ 											 sct:33367005 ?numD .
+ 											 VALUES (?Sex ?SexTypes) { 
+													 ("rcd:X768D" "Male") 
+													 ("rcd:X767C" "Female") 
+									 }
+										 FILTER ( ?ageD > 40 ) .
+	}

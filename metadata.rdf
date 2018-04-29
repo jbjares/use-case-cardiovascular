@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" 
+ xmlns:pht="http://datalab.rwth-aachen.de/vocab/pht#">
+
+<rdf:Description rdf:about="http://datalab.rwth-aachen.de/vocab/pht/">
+	<pht:algorithmid>DPOT-5ac60b4c5fada</pht:algorithmid>
+	<pht:owner>Lukas</pht:owner>
+	<pht:acesskey>ACCESS-5ac60b4c5fb2c</pht:acesskey>
+	<pht:purpose>Research</pht:purpose>
+	<pht:metadata>22</pht:metadata>
+	<pht:completeness>Full</pht:completeness>
+	<pht:provenance>Full</pht:provenance>
+	<pht:inclusion_1>age</pht:inclusion_1>
+	<pht:feature_1>Sex</pht:feature_1>
+	<pht:feature_2>Age</pht:feature_2>
+	<pht:feature_3>Coronary angiography</pht:feature_3>
+	<pht:target>Coronary angiography</pht:target>
+</rdf:Description>
+
+</rdf:RDF> 
