@@ -17,10 +17,9 @@ from sklearn.metrics.classification import accuracy_score
 from sklearn.metrics import precision_recall_fscore_support
 from sklearn.metrics import roc_auc_score
 from keras.models import model_from_json
-import matplotlib.pyplot as plt
 from SPARQLWrapper import SPARQLWrapper, JSON
 import pandas
-from sklearn import preprocessing 
+from sklearn import preprocessing
 
 import csv
 from bs4 import BeautifulSoup
@@ -31,19 +30,14 @@ import xml.etree.ElementTree as et
 warnings.filterwarnings("ignore")
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 ops.reset_default_graph()
-        
-def queryParser(query):
-	with open(query, 'r') as q:
-		data = q.read()
-	print("	Query has been verified!")  
-	return "" + data + ""
-	
+
+
 def metadataParser(metadataFile):
 	with open(metadataFile, 'r') as m:
-		XML = m.read() 
+		XML = m.read()
 	soup = BeautifulSoup(XML, 'xml')
 	target = soup.find('target').text
-	
+
 	if(target == "Age"):
 		target = "ageD"
 	if(target == "Sex"):
@@ -58,11 +52,11 @@ def metadataParser(metadataFile):
 		target = "fbsM"
 	if(target == "Electrocardiographic monitoring"):
 		target = "restecgM"
-	if(target == "Maximum heart rate"): 
+	if(target == "Maximum heart rate"):
 		target = "thalachD"
-	if(target == "Cardiovascular stress test using treadmill"): 
+	if(target == "Cardiovascular stress test using treadmill"):
 		target = "exangM"
-	if(target == "ST segment depression"): 
+	if(target == "ST segment depression"):
 		target = "oldpeakD"
 	if(target == "Sloping ST segment"):
 		target = "slopeI"
@@ -74,69 +68,35 @@ def metadataParser(metadataFile):
 		target = "numD"
 	else:
 		target = "Undefined"
- 
-	return target	 
-	
-def endpointParser(endpoint):
-	endpoint = str(endpoint)
-	print("	SPARQL query endpoint URL found! ")
-	return endpoint		      
 
-def dataCollection(endpoint, query): 
-	print("Data collection started: ") 
-	endpointURL = endpointParser(endpoint)
-	#print(endpointURL)
-	queryString = queryParser(query)
-	#print(queryString)
-	
-	SPARQL = SPARQLWrapper(endpointURL)  
-	SPARQL.setQuery(queryString) 
-	SPARQL.setReturnFormat(JSON) 
-	results = SPARQL.query().convert() 
-	
-	queryString = queryString[:queryString.find("WHERE")]	
-	schema = [i.replace("?", "") for i in re.findall("\?\w+", queryString)] 
-	
-	with open('DIC.csv', 'w+') as csvfile: 
-		writer = csv.writer(csvfile, delimiter=',') 
-		writer.writerow([g for g in schema])
-		#row = [result[column]["value"] for column in schema]
-		
-		for result in results["results"]["bindings"]: 
-			row = [result[column]["value"] for column in schema]
-			writer.writerow(row)
-				
-		file_name = csvfile.name
-		csvfile.close()
-		print("	Data has been collected and saved! \n")
-		return file_name
+	return target
 
 def dataSetGenerator(FILE_PATH, metadataFile):
-	print("Generating training data for your model: ")		
+	print("Generating training data for your model: ")
 	print("	Parsing metadata defined by the issuer!")
 	target = metadataParser(metadataFile)
 	print("	Metadata parsing completed! \n")
 
-	print("	Loading raw data ... ") 
-	raw_data = pd.read_csv(FILE_PATH)					    			# Open raw .csv 
-	print("	Raw data loaded successfully! \n") 
-	
-	print("	Preprocessing has been started ... ") 
+	print("	Loading raw data ... ")
+	raw_data = pd.read_csv(FILE_PATH)					    			# Open raw .csv
+	print("	Raw data loaded successfully! \n")
+
+	print("	Preprocessing has been started ... ")
 	le = preprocessing.LabelEncoder()
 	encodedData = raw_data.apply(le.fit_transform)
-	print("	Preprocessing completed! \n") 	
+	print("	Preprocessing completed! \n")
 
-	
+
 	#print(target)
-	Y_LABEL = target                                  				    # Name of the variable to be predicted 
-	KEYS = [i for i in encodedData.keys().tolist() if i != Y_LABEL]	    # Name of predictors 
-	N_INSTANCES = encodedData.shape[0]                     			    # Number of instances 
-	N_INPUT = encodedData.shape[1] - 1                     			    # Input size 
-	N_CLASSES = raw_data[Y_LABEL].unique().shape[0]     			    # Number of classes (output size) 
-	TEST_SIZE = 0.40                                    			    # Test set size (% of dataset) 
-	TRAIN_SIZE = int(N_INSTANCES * (1 - TEST_SIZE))     			    # Train size 
-	            
-	STDDEV = 0.1                                        			    # Standard deviation (for weights random init) 
+	Y_LABEL = target                                  				    # Name of the variable to be predicted
+	KEYS = [i for i in encodedData.keys().tolist() if i != Y_LABEL]	    # Name of predictors
+	N_INSTANCES = encodedData.shape[0]                     			    # Number of instances
+	N_INPUT = encodedData.shape[1] - 1                     			    # Input size
+	N_CLASSES = raw_data[Y_LABEL].unique().shape[0]     			    # Number of classes (output size)
+	TEST_SIZE = 0.40                                    			    # Test set size (% of dataset)
+	TRAIN_SIZE = int(N_INSTANCES * (1 - TEST_SIZE))     			    # Train size
+
+	STDDEV = 0.1                                        			    # Standard deviation (for weights random init)
 	RANDOM_STATE = 12345						                        # Random state for train_test_split
 
 	print("	Number of predictors: %s" %(N_INPUT))
@@ -163,21 +123,21 @@ def dataSetGenerator(FILE_PATH, metadataFile):
 	#print('X_train shape:', X_train.shape)
 	return X_train, X_test, X_valid, y_train, y_valid, y_test, N_CLASSES
 
-def networkConstructor(shape, N_CLASSES): 
+def networkConstructor(shape, N_CLASSES):
 	model = Sequential()
 	model.add(Dense(32, activation='relu', input_dim=shape, kernel_initializer="uniform"))
 	model.add(Dropout(0.5))
 	model.add(Dense(64, activation='relu', kernel_initializer="uniform"))
 	model.add(Dropout(0.5))
-	model.add(Dense(N_CLASSES, activation='softmax'))	
-	
-	return model 
-	
+	model.add(Dense(N_CLASSES, activation='softmax'))
+
+	return model
+
 def modelRestorer(model, modelPath):
 	# Initialize weights using checkpoint if it exists. (Checkpointing requires h5py)
 	load_checkpoint = True
-	checkpoint_filepath = modelPath + '/DNN_weight_DIC.h5'	
-	
+	checkpoint_filepath = modelPath + '/DNN_weight_DIC.h5'
+
 	if(load_checkpoint):
 		print("	Looking for previous weights ...")
 		if (isfile(checkpoint_filepath)):
@@ -189,31 +149,31 @@ def modelRestorer(model, modelPath):
 	else:
 		print('	Starting from scratch (no checkpoint) ... \n')
 	checkpointer = ModelCheckpoint(filepath=checkpoint_filepath, verbose=1, save_best_only=True)
-	return checkpointer	
-	
+	return checkpointer
+
 def networkTrainerWithPretrainedModel(X_train, y_train, X_valid, y_valid, model, checkpointer):
 	rmsprop = keras.optimizers.SGD(lr=1e-4, momentum=0.0, decay=0.0, nesterov=False)
-	model.compile(loss='categorical_crossentropy', optimizer=rmsprop, metrics=['accuracy']) 
-	
-	model.fit(X_train, y_train, validation_data=(X_valid, y_valid), callbacks=[checkpointer], batch_size=32, epochs=100) 
-	
-	#print(model.summary()) 
+	model.compile(loss='categorical_crossentropy', optimizer=rmsprop, metrics=['accuracy'])
+
+	model.fit(X_train, y_train, validation_data=(X_valid, y_valid), callbacks=[checkpointer], batch_size=32, epochs=100)
+
+	#print(model.summary())
 
 def networkTrainer(X_train, y_train, X_valid, y_valid, model):
 	rmsprop = keras.optimizers.SGD(lr=1e-4, momentum=0.0, decay=0.0, nesterov=False)
-	model.compile(loss='categorical_crossentropy', optimizer=rmsprop, metrics=['accuracy']) 
-	
-	model.fit(X_train, y_train, validation_data=(X_valid, y_valid), batch_size=32, epochs=100) 
-	
-	#print(model.summary()) 
-	
-def modelSaver(model, modelPath):	
+	model.compile(loss='categorical_crossentropy', optimizer=rmsprop, metrics=['accuracy'])
+
+	model.fit(X_train, y_train, validation_data=(X_valid, y_valid), batch_size=32, epochs=100)
+
+	#print(model.summary())
+
+def modelSaver(model, modelPath):
 	# serialize weights to HDF5
 	model.save_weights(modelPath+'/DNN_weight_DIC.h5')
-	
+
 def modelEvaluator(X_test, y_test, model):
-	score = model.evaluate(X_test, y_test, batch_size=32)     
-	y_prob = model.predict(X_test) 
+	score = model.evaluate(X_test, y_test, batch_size=32)
+	y_prob = model.predict(X_test)
 	y_pred = y_prob.argmax(axis=-1)
 	y_true = np.argmax(y_test, 1)
 
@@ -231,34 +191,36 @@ def modelEvaluator(X_test, y_test, model):
 	print("	Precision:", round(p,2))
 	print("	Recall:", round(r,2))
 	print("	F-Score:", round(f,2))
-	
-def main(endpoint, query, target, modelPath):
-	FILE_PATH = dataCollection(endpoint, query)
-	X_train, X_test, X_valid, y_train, y_valid, y_test, N_CLASSES = dataSetGenerator(FILE_PATH = FILE_PATH, metadataFile = target)
-		
+
+def main():
+
+    # Generate the data
+	X_train, X_test, X_valid, y_train, y_valid, y_test, N_CLASSES
+        = dataSetGenerator(FILE_PATH = FILE_PATH, metadataFile = target)
+
 	model = networkConstructor(shape=X_train.shape[1], N_CLASSES = N_CLASSES)
-			
+
 	print("Training has been started: ")
-	
+
 	try:
 		checkpointer = modelRestorer(model, modelPath)
 		networkTrainerWithPretrainedModel(X_train, y_train, X_valid, y_valid, model, checkpointer)
-	
+
 	except:
 		print("	Pretrained model had different structure so skipping it .... ")
 		networkTrainer(X_train, y_train, X_valid, y_valid, model)
-	
+
 	print("	Training has been completed!")
-	
+
 	print("	Saving model's weight to disk ...")
 	modelSaver(model, modelPath)
 	print("	Model's weight saved to disk! \n")
-		
-	print("Model evaluation has been started: ")	
-	modelEvaluator(X_test, y_test, model)		
-	print("	Model evaluation completed!")
-	
-	import gc; gc.collect()		
 
-if __name__ == "__main__": main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
-		
+	print("Model evaluation has been started: ")
+	modelEvaluator(X_test, y_test, model)
+	print("	Model evaluation completed!")
+
+	import gc; gc.collect()
+
+if __name__ == "__main__":
+    main()
