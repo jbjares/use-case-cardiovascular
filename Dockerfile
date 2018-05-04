@@ -1,4 +1,4 @@
-FROM train:python-deep-learning
+FROM petronetto/docker-python-deep-learning
 
 COPY metadata.rdf /metadata.rdf
 COPY algorithm.py /algorithm.py
